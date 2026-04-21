@@ -92,3 +92,46 @@ docker compose down
 # Full reset — removes all volumes including the PostgreSQL data
 docker compose down -v
 ```
+
+## Useful commands
+
+**Stack management**
+```powershell
+docker compose up --build -d      # first time, or after Dockerfile/requirements.txt changes
+docker compose up -d              # start (no rebuild)
+docker compose down               # stop, keep data
+docker compose down -v            # full reset (wipes Postgres volumes)
+docker compose ps                 # check container status
+```
+
+**Logs**
+```powershell
+docker compose logs airflow-webserver --tail 50
+docker compose logs airflow-scheduler --tail 50
+docker compose logs airflow-worker --tail 50
+docker compose logs -f airflow-webserver   # follow live
+```
+
+**Restart a single service**
+```powershell
+docker compose restart airflow-webserver
+docker compose up -d --force-recreate airflow-worker   # recreate with latest config
+```
+
+**Local dev / testing**
+```powershell
+uv sync --extra dev                                    # install/update local venv
+.venv\Scripts\python.exe -m pytest tests/ -v           # run unit tests
+```
+
+**Airflow CLI inside the container**
+```powershell
+docker compose exec airflow-scheduler airflow dags list
+docker compose exec airflow-scheduler airflow dags trigger elt_pipeline
+docker compose exec airflow-scheduler airflow dags pause etl_pipeline
+```
+
+**Postgres direct access**
+```powershell
+docker compose exec postgres psql -U postgres -d playground
+```
