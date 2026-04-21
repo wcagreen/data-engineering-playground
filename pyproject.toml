@@ -1,0 +1,80 @@
+[project]
+name = "airflow-playground"
+version = "0.1.0"
+description = "Local DE playground — Airflow 3.0, PostgreSQL, dbt, Soda"
+requires-python = ">=3.12,<3.13"
+
+# ─── Core runtime dependencies ─────────────────────────────────────────────────
+# These are the data-engineering libraries used inside DAGs and Python scripts.
+# They match what is installed in the Docker containers (requirements.txt).
+#
+# NOTE: Full apache-airflow is NOT listed here — it requires a Linux runtime
+# and is heavy (~500 MB). The stack runs in Docker. This local env exists for:
+#   • Running and testing Python scripts in scripts/python/ directly
+#   • Getting type hints / auto-complete for Airflow APIs in VS Code
+#   • Running pytest against DAG logic and transformation code
+#   • Linting with ruff
+dependencies = [
+    # Airflow — installed for IDE type hints; the runtime lives in Docker
+    "apache-airflow==3.0.0",
+    # Providers used in DAGs — must be listed explicitly so Pylance can resolve them
+    "apache-airflow-providers-postgres>=6.0.0",
+    "apache-airflow-providers-common-sql>=1.14.0",
+
+    # Data processing
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+
+    # PostgreSQL
+    "psycopg2-binary>=2.9.5",
+    # Airflow 3.0 core pins sqlalchemy<2.0; let Airflow resolve the exact version
+    "sqlalchemy>=1.4.49,<2.0",
+
+    # dbt
+    "dbt-core>=1.8.0,<2.0.0",
+    "dbt-postgres>=1.8.0,<2.0.0",
+
+    # Soda
+    "soda-core-postgres>=3.3.0",
+]
+
+# ─── Optional dependency groups ───────────────────────────────────────────────
+[project.optional-dependencies]
+# Install with:  uv sync --extra dev
+dev = [
+    "pytest>=8.0.0",
+    "pytest-mock>=3.12.0",
+    "ruff>=0.4.0",
+]
+
+# ─── UV configuration ─────────────────────────────────────────────────────────
+[tool.uv]
+# Airflow's official constraints are URL-based (not a PyPI package).
+# They are referenced in constraints.txt and applied when running:
+#   uv sync --constraint constraints.txt
+# UV writes its own uv.lock after resolution — that file is the source of truth
+# for reproducible installs on this machine.
+
+[tool.uv.sources]
+# Add per-package source overrides here if needed, e.g. a private index.
+
+# ─── Ruff (linter / formatter) ────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["dags", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]   # pycodestyle, pyflakes, warnings, isort, pyupgrade
+ignore = ["E501"]                      # line length handled by formatter
+
+[tool.ruff.lint.isort]
+known-first-party = ["dags", "scripts"]
+
+# ─── Pytest ───────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+log_cli = true
+log_cli_level = "INFO"

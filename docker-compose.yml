@@ -37,14 +37,14 @@ x-airflow-common: &airflow-common
     # Tell dbt where to find profiles.yml
     DBT_PROFILES_DIR: /opt/airflow/dbt
   volumes:
-    - ./dags:/opt/airflow/dags
+    - ./dags:/opt/airflow/dags              # live-reload: save a DAG file → Airflow picks it up instantly
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
     - ./data:/opt/airflow/data
     - ./sql:/opt/airflow/sql
     - ./soda:/opt/airflow/soda
     - ./dbt:/opt/airflow/dbt
-    - ./scripts/python:/opt/airflow/scripts/python
+    - ./scripts/python:/opt/airflow/scripts/python  # etl_transforms.py and other scripts
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     redis:

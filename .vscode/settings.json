@@ -1,0 +1,57 @@
+{
+    // ── Python interpreter ─────────────────────────────────────────────────────
+    // Point VS Code at the UV-managed virtual environment.
+    // If Pylance still shows import errors, press Ctrl+Shift+P →
+    // "Python: Select Interpreter" and choose  .venv\Scripts\python.exe
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+
+    // ── Pylance / static analysis ─────────────────────────────────────────────
+    // Airflow's __init__.py calls os.register_at_fork() which crashes on Windows
+    // at runtime, but Pylance does STATIC analysis — it never executes the code.
+    // Pointing directly at site-packages lets Pylance read the .py files without
+    // triggering the Windows-incompatible runtime initialisation.
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/.venv/Lib/site-packages",
+        "${workspaceFolder}/scripts/python"
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic",
+
+    // ── Ruff (linter + formatter) ──────────────────────────────────────────────
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+        }
+    },
+    "ruff.enable": true,
+    "ruff.lint.enable": true,
+
+    // ── Pytest ────────────────────────────────────────────────────────────────
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["tests"],
+    "python.testing.unittestEnabled": false,
+
+    // ── Editor ────────────────────────────────────────────────────────────────
+    "editor.rulers": [100],
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+
+    // ── File associations ────────────────────────────────────────────────────
+    "files.associations": {
+        "*.sql": "sql",
+        "profiles.yml": "yaml",
+        "dbt_project.yml": "yaml"
+    },
+
+    // ── Explorer — hide generated noise ──────────────────────────────────────
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        ".venv": true,
+        "dbt/target": true,
+        "dbt/dbt_packages": true
+    }
+}

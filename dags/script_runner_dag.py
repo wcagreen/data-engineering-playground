@@ -34,30 +34,35 @@ import subprocess
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+
+# Airflow 3.0: PythonOperator moved to apache-airflow-providers-standard
+from airflow.providers.standard.operators.python import PythonOperator
 
 # ─── Configuration — edit these ───────────────────────────────────────────────
-SCRIPT_PATH  = "/opt/airflow/scripts/python/example_script.py"
+SCRIPT_PATH = "/opt/airflow/scripts/python/example_script.py"
 
 # Static arguments passed to the script every run.
 # For dynamic args from the UI trigger, see the dag_run.conf example below.
-SCRIPT_ARGS  = [
-    "--input", "/opt/airflow/data/raw/your_file.csv",
-    "--min-rows", "1",
+SCRIPT_ARGS = [
+    "--input",
+    "/opt/airflow/data/raw/your_file.csv",
+    "--min-rows",
+    "1",
 ]
 
 # How long (seconds) to let the script run before Airflow kills it.
-SCRIPT_TIMEOUT_SEC = 3600   # 1 hour
+SCRIPT_TIMEOUT_SEC = 3600  # 1 hour
 # ──────────────────────────────────────────────────────────────────────────────
 
 default_args = {
     "owner": "airflow",
-    "retries": 0,           # don't retry script failures automatically
+    "retries": 0,  # don't retry script failures automatically
     "retry_delay": timedelta(minutes=2),
 }
 
 
 # ── Task functions ─────────────────────────────────────────────────────────────
+
 
 def invoke_script(**context):
     """
@@ -74,7 +79,8 @@ def invoke_script(**context):
       task so the full output is always visible regardless of outcome.
     """
     # Allow runtime override of args via UI / API trigger conf
-    dag_run_conf = context.get("dag_run").conf or {}
+    dag_run = context.get("dag_run")
+    dag_run_conf = dag_run.conf if dag_run is not None else {}
     runtime_args = dag_run_conf.get("script_args", SCRIPT_ARGS)
 
     cmd = ["python", SCRIPT_PATH, *runtime_args]
@@ -85,14 +91,15 @@ def invoke_script(**context):
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,   # merge stderr into stdout stream
+        stderr=subprocess.STDOUT,  # merge stderr into stdout stream
         text=True,
     )
 
     output_lines: list[str] = []
+    assert process.stdout is not None
     for line in process.stdout:
         stripped = line.rstrip()
-        print(stripped)             # visible in Airflow task log
+        print(stripped)  # visible in Airflow task log
         output_lines.append(stripped)
 
     process.wait(timeout=SCRIPT_TIMEOUT_SEC)
@@ -149,19 +156,19 @@ with DAG(
     description="Invoke an external Python script and check its exit code (ECS/Lambda-style)",
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
-    schedule=None,            # manual trigger
+    schedule=None,  # manual trigger
     catchup=False,
     tags=["script-runner", "subprocess", "python"],
     # Params let you change script_args from the Airflow UI trigger form.
     # Click 'Trigger DAG w/ config' and enter:
     #   {"script_args": ["--input", "/opt/airflow/data/raw/other.csv"]}
-    params={},
 ) as dag:
-
     t1_invoke = PythonOperator(
         task_id="invoke_script",
         python_callable=invoke_script,
-        execution_timeout=timedelta(seconds=SCRIPT_TIMEOUT_SEC + 60),  # slightly above subprocess timeout
+        execution_timeout=timedelta(
+            seconds=SCRIPT_TIMEOUT_SEC + 60
+        ),  # slightly above subprocess timeout
     )
 
     t2_check = PythonOperator(

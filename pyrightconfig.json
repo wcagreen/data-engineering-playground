@@ -1,0 +1,27 @@
+{
+  // Pyright / Pylance configuration
+  // ---------------------------------
+  // NOTE: In VS Code, Pylance honours the interpreter selected by the
+  //       Python extension, NOT venvPath/venv here. The settings that
+  //       actually matter for VS Code are in .vscode/settings.json.
+  //       This file is used when running  uv run pyright  from the CLI.
+
+  "venvPath": ".",
+  "venv": ".venv",
+
+  // Airflow's __init__.py calls os.register_at_fork() (POSIX-only).
+  // Pointing at site-packages directly lets Pyright do static analysis
+  // on the installed .py files without importing them.
+  "extraPaths": [
+    ".venv/Lib/site-packages",
+    "dags",
+    "scripts/python"
+  ],
+
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+
+  // Suppress the POSIX-runtime errors — these are expected on Windows
+  // and do not affect static type checking.
+  "reportMissingModuleSource": "none"
+}

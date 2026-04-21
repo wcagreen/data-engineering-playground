@@ -25,19 +25,21 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 from airflow import DAG
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
+# Airflow 3.0: operators moved to apache-airflow-providers-standard
+from airflow.providers.standard.operators.bash import BashOperator
+from airflow.providers.standard.operators.python import PythonOperator
+
 # ─── Configuration — edit these ───────────────────────────────────────────────
-CSV_FILE_PATH = "/opt/airflow/data/raw/your_file.csv"   # path to your CSV
-TABLE_NAME    = "your_table"                             # staging table name
-STAGING_SCHEMA    = "staging"
+CSV_FILE_PATH = "/opt/airflow/data/raw/your_file.csv"  # path to your CSV
+TABLE_NAME = "your_table"  # staging table name
+STAGING_SCHEMA = "staging"
 PRODUCTION_SCHEMA = "production"
-POSTGRES_CONN_ID  = "playground_postgres"               # registered via env var
-DBT_PROJECT_DIR   = "/opt/airflow/dbt"
-SODA_CONFIG_FILE  = "/opt/airflow/soda/configuration.yml"
-SODA_CHECKS_FILE  = "/opt/airflow/soda/checks/production_checks.yml"
+POSTGRES_CONN_ID = "playground_postgres"  # registered via env var
+DBT_PROJECT_DIR = "/opt/airflow/dbt"
+SODA_CONFIG_FILE = "/opt/airflow/soda/configuration.yml"
+SODA_CHECKS_FILE = "/opt/airflow/soda/checks/production_checks.yml"
 # ──────────────────────────────────────────────────────────────────────────────
 
 default_args = {
@@ -49,6 +51,7 @@ default_args = {
 
 # ── Task functions ─────────────────────────────────────────────────────────────
 
+
 def load_csv_to_staging(**context):
     """
     E + L  (the ELT 'Load' step):
@@ -57,24 +60,23 @@ def load_csv_to_staging(**context):
     """
     if not os.path.exists(CSV_FILE_PATH):
         raise FileNotFoundError(
-            f"CSV not found at: {CSV_FILE_PATH}\n"
-            "Place your file in the data/raw/ directory."
+            f"CSV not found at: {CSV_FILE_PATH}\nPlace your file in the data/raw/ directory."
         )
 
     df = pd.read_csv(CSV_FILE_PATH)
     print(f"Read {len(df):,} rows  |  columns: {list(df.columns)}")
 
-    hook   = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+    hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
     engine = hook.get_sqlalchemy_engine()
 
     df.to_sql(
         name=TABLE_NAME,
         schema=STAGING_SCHEMA,
         con=engine,
-        if_exists="replace",   # drop & recreate — change to 'append' to keep history
+        if_exists="replace",  # drop & recreate — change to 'append' to keep history
         index=False,
         chunksize=1_000,
-        method="multi",        # faster batch inserts
+        method="multi",  # faster batch inserts
     )
     print(f"Loaded {len(df):,} rows → {STAGING_SCHEMA}.{TABLE_NAME}")
 
@@ -96,7 +98,7 @@ def run_soda_checks(**context):
     exit_code = scan.execute()
     print(scan.get_logs_text())
 
-    if exit_code not in (0, 2):           # treat warnings as non-fatal
+    if exit_code not in (0, 2):  # treat warnings as non-fatal
         raise Exception(f"Soda scan failed (exit code {exit_code})")
 
 
@@ -107,11 +109,10 @@ with DAG(
     description="ELT: CSV → staging → dbt transform → production → Soda QC",
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
-    schedule=None,            # manual trigger — Airflow 3.0 removed schedule_interval
+    schedule=None,  # manual trigger — Airflow 3.0 removed schedule_interval
     catchup=False,
     tags=["elt", "postgres", "dbt", "soda"],
 ) as dag:
-
     t1_load = PythonOperator(
         task_id="load_csv_to_staging",
         python_callable=load_csv_to_staging,
