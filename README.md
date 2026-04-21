@@ -7,8 +7,7 @@ A local ELT / ETL practice environment built with Docker Compose.
 | Service | URL | Credentials |
 |---|---|---|
 | Airflow UI | http://localhost:8080 | admin / admin |
-| pgAdmin | http://localhost:5050 | admin@playground.local / admin |
-| JupyterLab | http://localhost:8888 | token: `playground` |
+| pgAdmin | http://localhost:5050 | admin@example.com / admin |
 | PostgreSQL | localhost:5432 | postgres / postgres |
 | Celery Flower *(optional)* | http://localhost:5555 | — |
 
