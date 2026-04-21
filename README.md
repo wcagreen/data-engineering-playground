@@ -1,5 +1,4 @@
-# airflow-playground
-
+# data-engineering-playground
 A local ELT / ETL practice environment built with Docker Compose.
 
 ## Stack
