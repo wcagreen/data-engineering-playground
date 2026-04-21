@@ -1,0 +1,3 @@
+# Ensure shell scripts always use Unix line endings inside Linux containers
+*.sh    text eol=lf
+*.sql   text eol=lf

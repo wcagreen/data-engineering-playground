@@ -1,0 +1,40 @@
+# soda/checks/production_checks.yml
+# -----------------------------------
+# Data quality checks run against production tables after transformation.
+# These are executed by both the ELT and ETL DAGs as the final step.
+#
+# Update "your_table" and column names to match your data.
+# Soda CL reference: https://docs.soda.io/soda-cl/soda-cl-overview.html
+
+checks for production.your_table:  # ← rename to your production table
+
+  # ── Volume ──────────────────────────────────────────────────────────────────
+  - row_count > 0:
+      name: "Production table must have rows"
+
+  # ── Completeness ────────────────────────────────────────────────────────────
+  - missing_count(id) = 0:          # ← replace 'id' with your PK column
+      name: "No missing primary keys in production"
+
+  # ── Uniqueness ──────────────────────────────────────────────────────────────
+  - duplicate_count(id) = 0:        # ← replace 'id' with your PK column
+      name: "No duplicate primary keys in production"
+
+  # ── Audit columns added by the ETL DAG ──────────────────────────────────────
+  - missing_count(_loaded_at) = 0:
+      name: "Every row must have a load timestamp"
+
+  # ── Freshness (uncomment if your data has a date column) ─────────────────────
+  # - freshness(created_at) < 25h:
+  #     name: "Data should be no older than 25 hours"
+
+  # ── Numeric range examples ────────────────────────────────────────────────────
+  # - min(amount) >= 0:
+  #     name: "Amount must be non-negative"
+
+  # - max(discount_pct) <= 100:
+  #     name: "Discount cannot exceed 100%"
+
+  # ── Referential integrity example ────────────────────────────────────────────
+  # - values in (customer_id) must exist in production.customers (id):
+  #     name: "Customer ID must exist in customers table"

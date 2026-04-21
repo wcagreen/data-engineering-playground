@@ -1,0 +1,22 @@
+# dbt profiles.yml
+# -----------------
+# DBT_PROFILES_DIR env var is set to /opt/airflow/dbt so dbt finds this file
+# automatically when run inside the Airflow containers.
+#
+# To run dbt locally (outside Docker), set:
+#   export DBT_PROFILES_DIR=$(pwd)
+# and change host to  localhost  and port to  5432.
+
+playground:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: postgres          # Docker service name; use 'localhost' for local runs
+      user: playground_user
+      password: playground_pass
+      port: 5432
+      dbname: playground
+      schema: production      # default schema; overridden per model via +schema
+      threads: 4
+      connect_timeout: 10

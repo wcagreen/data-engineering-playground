@@ -1,0 +1,27 @@
+name: 'playground'
+version: '1.0.0'
+config-version: 2
+
+profile: 'playground'
+
+model-paths:    ["models"]
+analysis-paths: ["analyses"]
+test-paths:     ["tests"]
+seed-paths:     ["seeds"]
+macro-paths:    ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  playground:
+    # Staging models — views over raw staging data
+    staging:
+      +schema: staging
+      +materialized: view
+    # Mart / production models — permanent tables in the production schema
+    mart:
+      +schema: production
+      +materialized: table

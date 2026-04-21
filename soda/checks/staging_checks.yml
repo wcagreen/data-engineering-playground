@@ -1,0 +1,29 @@
+# soda/checks/staging_checks.yml
+# --------------------------------
+# Data quality checks run against the raw staging tables immediately
+# after a CSV load.  Use these to catch problems before transformation.
+#
+# Update "your_table" and column names to match your data.
+# Soda CL reference: https://docs.soda.io/soda-cl/soda-cl-overview.html
+
+checks for staging.your_table:    # ← rename to your staging table
+
+  # ── Volume ──────────────────────────────────────────────────────────────────
+  - row_count > 0:
+      name: "Staging table must have rows"
+
+  # ── Completeness ────────────────────────────────────────────────────────────
+  - missing_count(id) = 0:         # ← replace 'id' with your PK column
+      name: "No missing primary keys"
+
+  # ── Uniqueness ──────────────────────────────────────────────────────────────
+  - duplicate_count(id) = 0:       # ← replace 'id' with your PK column
+      name: "No duplicate primary keys"
+
+  # ── Validity examples (uncomment & adapt) ────────────────────────────────────
+  # - invalid_count(status) = 0:
+  #     valid values: [active, inactive, pending]
+  #     name: "Status must be a known value"
+
+  # - min(amount) >= 0:
+  #     name: "Amount must be non-negative"

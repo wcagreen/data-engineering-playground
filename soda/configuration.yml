@@ -1,0 +1,14 @@
+# soda/configuration.yml
+# -----------------------
+# Soda data source configuration for the playground PostgreSQL database.
+# The data source name "playground" is referenced in both DAGs and check files.
+#
+# Soda docs: https://docs.soda.io/soda-cl/soda-cl-overview.html
+
+data_source playground:
+  type: postgres
+  host: postgres          # Docker service name; use 'localhost' for local runs
+  port: "5432"
+  username: playground_user
+  password: playground_pass
+  database: playground

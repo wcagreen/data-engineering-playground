@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: stg_example
+    description: "Staging view — cleaned raw data. Replace with your real model."
+    columns:
+      - name: id
+        description: "Primary key"
+        tests:
+          - not_null
+          - unique

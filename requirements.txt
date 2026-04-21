@@ -1,0 +1,21 @@
+# ─── Data processing ──────────────────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.24.0
+
+# ─── PostgreSQL connectivity ──────────────────────────────────────────────────
+# psycopg2-binary bundles libpq so no system lib is required at runtime
+psycopg2-binary>=2.9.5
+# Airflow 3.0 requires SQLAlchemy 2.x
+SQLAlchemy>=2.0.0
+
+# ─── Airflow providers ────────────────────────────────────────────────────────
+apache-airflow-providers-postgres>=6.0.0
+apache-airflow-providers-common-sql>=1.14.0
+apache-airflow-providers-celery>=3.8.0
+
+# ─── dbt (SQL transformations inside ELT pipeline) ───────────────────────────
+dbt-core>=1.8.0,<2.0.0
+dbt-postgres>=1.8.0,<2.0.0
+
+# ─── Soda (data quality checks) ──────────────────────────────────────────────
+soda-core-postgres>=3.3.0

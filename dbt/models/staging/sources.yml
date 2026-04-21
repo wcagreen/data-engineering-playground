@@ -1,0 +1,12 @@
+version: 2
+
+# Declare the raw staging tables that dbt should read from.
+# Update "your_table" to match the table name used in your ELT DAG.
+
+sources:
+  - name: staging
+    schema: staging
+    description: "Raw data loaded from CSV files by the ELT DAG."
+    tables:
+      - name: your_table          # ← rename to match TABLE_NAME in elt_dag.py
+        description: "Raw CSV data loaded into staging without transformation."
