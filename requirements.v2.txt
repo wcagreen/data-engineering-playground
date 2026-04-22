@@ -1,0 +1,14 @@
+# ─── Airflow-ecosystem packages ───────────────────────────────────────────────
+# Installed with the official Airflow constraints file (see Dockerfile.v2).
+# No version ranges here — the constraints file handles pinning.
+
+# ─── Data processing ──────────────────────────────────────────────────────────
+pandas
+numpy
+
+# ─── PostgreSQL connectivity ──────────────────────────────────────────────────
+psycopg2-binary
+
+# ─── Airflow providers ────────────────────────────────────────────────────────
+apache-airflow-providers-postgres
+apache-airflow-providers-common-sql

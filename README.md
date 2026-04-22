@@ -1,6 +1,7 @@
 # airflow-playground
 
 A local ELT / ETL practice environment built with Docker Compose.
+Supports two Airflow profiles: **v3** (default) and **v2** — switch by choosing the compose file.
 
 ## Stack
 
@@ -15,15 +16,29 @@ A local ELT / ETL practice environment built with Docker Compose.
 - `airflow` — Airflow internal metadata (managed automatically)
 - `playground` — your data; schemas `staging` and `production`
 
+## Airflow version profiles
+
+| Profile | Compose file | Airflow | Auth | Dockerfile |
+|---|---|---|---|---|
+| **v3** (default) | `docker-compose.yml` | 3.0.0 | SimpleAuthManager | `Dockerfile` |
+| **v2** | `docker-compose.v2.yml` | 2.10.3 | FAB (Flask-AppBuilder) | `Dockerfile.v2` |
+
+Both profiles share the same `dags/`, `data/`, `dbt/`, and `soda/` folders and use **separate Docker volumes** so their Postgres data never mixes.  Run only one profile at a time to avoid port conflicts on 8080 / 5432 / 5050.
+
 ## Quick start
 
 ```bash
 # 1. Copy your CSV files into data/raw/
-# 2. Build the custom Airflow image and start everything
+
+# ── Airflow v3 (default) ─────────────────────────────────────────────────────
 docker compose up --build -d
 
-# Flower (Celery monitoring) is opt-in:
+# ── Airflow v2 ───────────────────────────────────────────────────────────────
+docker compose -f docker-compose.v2.yml up --build -d
+
+# Flower (Celery monitoring) is opt-in for both profiles:
 docker compose --profile flower up -d
+docker compose -f docker-compose.v2.yml --profile flower up -d
 ```
 
 First startup takes a few minutes while the Airflow image builds and the
@@ -86,22 +101,32 @@ Both DAGs are set to **manual trigger** (`schedule_interval=None`).
 ## Stopping / resetting
 
 ```bash
-# Stop all containers (data is preserved in Docker volumes)
-docker compose down
+# ── v3 ───────────────────────────────────────────────────────────────────────
+docker compose down           # stop, keep data
+docker compose down -v        # full reset (wipes postgres-db-volume, pgadmin-volume)
 
-# Full reset — removes all volumes including the PostgreSQL data
-docker compose down -v
+# ── v2 ───────────────────────────────────────────────────────────────────────
+docker compose -f docker-compose.v2.yml down
+docker compose -f docker-compose.v2.yml down -v   # wipes postgres-db-v2, pgadmin-v2
 ```
 
 ## Useful commands
 
 **Stack management**
 ```powershell
+# ── v3 (default) ─────────────────────────────────────────────────────────────
 docker compose up --build -d      # first time, or after Dockerfile/requirements.txt changes
 docker compose up -d              # start (no rebuild)
 docker compose down               # stop, keep data
 docker compose down -v            # full reset (wipes Postgres volumes)
 docker compose ps                 # check container status
+
+# ── v2 ───────────────────────────────────────────────────────────────────────
+docker compose -f docker-compose.v2.yml up --build -d   # first time, or after Dockerfile.v2/requirements.v2.txt changes
+docker compose -f docker-compose.v2.yml up -d
+docker compose -f docker-compose.v2.yml down
+docker compose -f docker-compose.v2.yml down -v
+docker compose -f docker-compose.v2.yml ps
 ```
 
 **Logs**
