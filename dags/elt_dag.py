@@ -20,8 +20,10 @@ How to use
 
 from __future__ import annotations
 
+import hashlib
 import os
-from datetime import datetime, timedelta
+import re
+from datetime import datetime
 
 import pandas as pd
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -49,12 +51,77 @@ SODA_CHECKS_FILE = "/opt/airflow/soda/checks/production_checks.yml"
 
 default_args = {
     "owner": "airflow",
-    "retries": 1,
-    "retry_delay": timedelta(minutes=5),
+    "retries": 0,
 }
 
 
 # ── Task functions ─────────────────────────────────────────────────────────────
+
+POSTGRES_IDENTIFIER_MAX_LEN = 63
+
+
+def _postgres_safe_column_name(name: str, index: int, used_names: set[str]) -> str:
+    """
+    Build a PostgreSQL-safe, unique identifier.
+
+    PostgreSQL truncates identifiers to 63 chars. We add a short hash so long
+    similar names remain unique and deterministic.
+    """
+    base = re.sub(r"[^0-9A-Za-z_]+", "_", str(name)).strip("_")
+    if not base:
+        base = f"col_{index + 1}"
+    if base[0].isdigit():
+        base = f"col_{base}"
+
+    digest = hashlib.sha1(str(name).encode("utf-8")).hexdigest()[:8]
+    reserved = len(digest) + 1  # underscore + hash
+    trimmed = base[: POSTGRES_IDENTIFIER_MAX_LEN - reserved]
+    candidate = f"{trimmed}_{digest}"
+
+    counter = 1
+    while candidate in used_names:
+        suffix = f"_{counter}"
+        max_len = POSTGRES_IDENTIFIER_MAX_LEN - len(suffix)
+        candidate = f"{candidate[:max_len]}{suffix}"
+        counter += 1
+
+    used_names.add(candidate)
+    return candidate
+
+
+def _normalize_postgres_columns(columns: list[str]) -> list[str]:
+    used_names: set[str] = set()
+    used_truncated_names: set[str] = set()
+    normalized: list[str] = []
+
+    for i, column in enumerate(columns):
+        raw_name = str(column)
+        raw_truncated = raw_name[:POSTGRES_IDENTIFIER_MAX_LEN]
+
+        if (
+            len(raw_name) <= POSTGRES_IDENTIFIER_MAX_LEN
+            and raw_truncated not in used_truncated_names
+        ):
+            candidate = raw_name
+            used_names.add(candidate)
+            used_truncated_names.add(raw_truncated)
+        else:
+            candidate = _postgres_safe_column_name(
+                name=raw_name,
+                index=i,
+                used_names=used_names,
+            )
+            while candidate[:POSTGRES_IDENTIFIER_MAX_LEN] in used_truncated_names:
+                candidate = _postgres_safe_column_name(
+                    name=f"{raw_name}_{i}",
+                    index=i,
+                    used_names=used_names,
+                )
+            used_truncated_names.add(candidate[:POSTGRES_IDENTIFIER_MAX_LEN])
+
+        normalized.append(candidate)
+
+    return normalized
 
 
 def load_csv_to_staging(**context):
@@ -70,6 +137,19 @@ def load_csv_to_staging(**context):
 
     df = pd.read_csv(CSV_FILE_PATH)
     print(f"Read {len(df):,} rows  |  columns: {list(df.columns)}")
+
+    original_columns = [str(column) for column in df.columns]
+    normalized_columns = _normalize_postgres_columns(original_columns)
+    if normalized_columns != original_columns:
+        renamed = [
+            f"{old} -> {new}"
+            for old, new in zip(original_columns, normalized_columns)
+            if old != new
+        ]
+        print("Normalized CSV columns for PostgreSQL compatibility:")
+        for line in renamed:
+            print(f"  {line}")
+    df.columns = normalized_columns
 
     hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
     engine = hook.get_sqlalchemy_engine()

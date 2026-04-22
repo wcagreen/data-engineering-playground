@@ -1,12 +1,13 @@
 # data-engineering-playground
 A local ELT / ETL practice environment built with Docker Compose.
-Supports two Airflow profiles: **v3** (default) and **v2** — switch by choosing the compose file.
+Supports two Airflow versions with a **single compose file**: **v3** (default) and **v2**.
 
 ## Stack
 
 | Service | URL | Credentials |
 |---|---|---|
 | Airflow UI | http://localhost:8080 | admin / admin |
+| Airflow DAG Processor | internal service | parses/serializes DAGs |
 | pgAdmin | http://localhost:5050 | admin@example.com / admin |
 | PostgreSQL | localhost:5432 | postgres / postgres |
 | Celery Flower *(optional)* | http://localhost:5555 | — |
@@ -17,27 +18,48 @@ Supports two Airflow profiles: **v3** (default) and **v2** — switch by choosin
 
 ## Airflow version profiles
 
-| Profile | Compose file | Airflow | Auth | Dockerfile |
+| Profile | One-command launcher | Airflow | Auth | Dockerfile |
 |---|---|---|---|---|
-| **v3** (default) | `docker-compose.yml` | 3.0.0 | SimpleAuthManager | `Dockerfile` |
-| **v2** | `docker-compose.v2.yml` | 2.10.3 | FAB (Flask-AppBuilder) | `Dockerfile.v2` |
+| **v3** (default) | `./scripts/dev/up-v3.ps1` | 3.0.0 | SimpleAuthManager | `Dockerfile` |
+| **v2** | `./scripts/dev/up-v2.ps1` | 2.10.3 | FAB (Flask-AppBuilder) | `Dockerfile.v2` |
 
-Both profiles share the same `dags/`, `data/`, `dbt/`, and `soda/` folders and use **separate Docker volumes** so their Postgres data never mixes.  Run only one profile at a time to avoid port conflicts on 8080 / 5432 / 5050.
+Both profiles share the same `dags/`, `data/`, `dbt/`, and `soda/` folders and still use **separate Docker volumes** (via `AIRFLOW_STACK_VARIANT`) so v2/v3 metadata does not mix. Run only one profile at a time to avoid port conflicts on 8080 / 5432 / 5050.
+
+By default, published ports are bound to **127.0.0.1** (localhost only), so the playground is not exposed to your LAN unless you explicitly change `HOST_BIND`.
 
 ## Quick start
 
 ```bash
+# Optional: create a local env file for overrides
+# cp .env.example .env
+
+# Optional: set custom credentials in .env
+# (Postgres / pgAdmin / Airflow 2.x login)
+
 # 1. Copy your CSV files into data/raw/
 
-# ── Airflow v3 (default) ─────────────────────────────────────────────────────
-docker compose up --build -d
+# PowerShell one-command launchers
+./scripts/dev/up-v3.ps1
+# or
+./scripts/dev/up-v2.ps1
 
-# ── Airflow v2 ───────────────────────────────────────────────────────────────
-docker compose -f docker-compose.v2.yml up --build -d
+# Optional: stop / reset
+./scripts/dev/down-v3.ps1
+./scripts/dev/reset-v3.ps1
+```
+
+## Advanced (raw compose)
+
+```bash
+# v3
+docker compose --env-file airflow.v3.env up --build -d
+
+# v2
+docker compose --env-file airflow.v2.env up --build -d
 
 # Flower (Celery monitoring) is opt-in for both profiles:
-docker compose --profile flower up -d
-docker compose -f docker-compose.v2.yml --profile flower up -d
+docker compose --env-file airflow.v3.env --profile flower up -d
+docker compose --env-file airflow.v2.env --profile flower up -d
 ```
 
 First startup takes a few minutes while the Airflow image builds and the
@@ -69,13 +91,16 @@ airflow-playground/
 │   └── transformations/    Plain SQL snippets (no dbt)
 ├── scripts/
 │   ├── init/               Runs once on first PostgreSQL start
-│   └── pgadmin/            Auto-registers the PG server in pgAdmin
-├── notebooks/
-│   └── exploration.ipynb   Prototype transforms, query PG
+│   ├── pgadmin/            Auto-registers the PG server in pgAdmin
+│   ├── python/             Pure Python transforms + script-runner entrypoint
+│   ├── airflow/            Airflow auth/password bootstrapping config
+│   └── dev/                One-command local launchers (v2/v3 up/down/reset)
 ├── Dockerfile              Custom Airflow image (adds pandas, dbt, soda)
 ├── requirements.txt
+├── airflow.v2.env          Airflow 2.x preset overrides (single-compose mode)
+├── airflow.v3.env          Airflow 3.x preset overrides (single-compose mode)
 ├── docker-compose.yml
-└── .env
+└── .env.example
 ```
 
 ## Using the DAGs
@@ -101,31 +126,40 @@ Both DAGs are set to **manual trigger** (`schedule_interval=None`).
 
 ```bash
 # ── v3 ───────────────────────────────────────────────────────────────────────
-docker compose down           # stop, keep data
-docker compose down -v        # full reset (wipes postgres-db-volume, pgadmin-volume)
+./scripts/dev/down-v3.ps1
+./scripts/dev/reset-v3.ps1
 
 # ── v2 ───────────────────────────────────────────────────────────────────────
-docker compose -f docker-compose.v2.yml down
-docker compose -f docker-compose.v2.yml down -v   # wipes postgres-db-v2, pgadmin-v2
+./scripts/dev/down-v2.ps1
+./scripts/dev/reset-v2.ps1
 ```
+
+## Optional credential customization
+
+`docker compose` automatically reads `.env`. If you want custom local credentials:
+
+1. Copy `.env.example` to `.env`
+2. Change values like `POSTGRES_PASSWORD`, `PLAYGROUND_PASSWORD`, `PGADMIN_DEFAULT_PASSWORD`, `_AIRFLOW_WWW_USER_PASSWORD`
+3. For Airflow 3.0 SimpleAuthManager, edit `scripts/airflow/passwords.json`
+4. Rebuild and restart (`docker compose up --build -d`)
+
+Note: the PostgreSQL init script runs only on first volume creation. If you change `PLAYGROUND_*` values later, run `docker compose down -v` first to reinitialize.
 
 ## Useful commands
 
 **Stack management**
 ```powershell
 # ── v3 (default) ─────────────────────────────────────────────────────────────
-docker compose up --build -d      # first time, or after Dockerfile/requirements.txt changes
-docker compose up -d              # start (no rebuild)
-docker compose down               # stop, keep data
-docker compose down -v            # full reset (wipes Postgres volumes)
-docker compose ps                 # check container status
+./scripts/dev/up-v3.ps1          # first time, or after Dockerfile/requirements.txt changes
+./scripts/dev/down-v3.ps1        # stop, keep data
+./scripts/dev/reset-v3.ps1       # full reset (wipes v3 Postgres volumes)
+docker compose --env-file airflow.v3.env ps
 
 # ── v2 ───────────────────────────────────────────────────────────────────────
-docker compose -f docker-compose.v2.yml up --build -d   # first time, or after Dockerfile.v2/requirements.v2.txt changes
-docker compose -f docker-compose.v2.yml up -d
-docker compose -f docker-compose.v2.yml down
-docker compose -f docker-compose.v2.yml down -v
-docker compose -f docker-compose.v2.yml ps
+./scripts/dev/up-v2.ps1          # first time, or after Dockerfile.v2/requirements.v2.txt changes
+./scripts/dev/down-v2.ps1
+./scripts/dev/reset-v2.ps1
+docker compose --env-file airflow.v2.env ps
 ```
 
 **Logs**

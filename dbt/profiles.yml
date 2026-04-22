@@ -12,11 +12,11 @@ playground:
   outputs:
     dev:
       type: postgres
-      host: postgres          # Docker service name; use 'localhost' for local runs
-      user: playground_user
-      password: playground_pass
-      port: 5432
-      dbname: playground
-      schema: production      # default schema; overridden per model via +schema
+      host: "{{ env_var('PLAYGROUND_HOST', 'postgres') }}"
+      user: "{{ env_var('PLAYGROUND_USER', 'playground_user') }}"
+      password: "{{ env_var('PLAYGROUND_PASSWORD', 'playground_pass') }}"
+      port: "{{ env_var('PLAYGROUND_PORT', '5432') | int }}"
+      dbname: "{{ env_var('PLAYGROUND_DB', 'playground') }}"
+      schema: "{{ env_var('PLAYGROUND_SCHEMA', 'production') }}"  # overridden per model via +schema
       threads: 4
       connect_timeout: 10
