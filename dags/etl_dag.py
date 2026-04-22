@@ -31,11 +31,15 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
-from airflow import DAG
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
-# Airflow 3.0: PythonOperator moved to apache-airflow-providers-standard
-from airflow.providers.standard.operators.python import PythonOperator
+from airflow import DAG
+
+# Operator import: providers-standard (Airflow 3.x) with fallback to core (Airflow 2.x)
+try:
+    from airflow.providers.standard.operators.python import PythonOperator
+except ImportError:
+    from airflow.operators.python import PythonOperator  # type: ignore[no-redef]
 
 # Resolve scripts/python/ relative to this file so the import works whether
 # the DAG is loaded by Airflow inside Docker (/opt/airflow/dags/) or by
@@ -47,8 +51,8 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from etl_transforms import apply_transforms  # noqa: E402
 
 # ─── Configuration — edit these ───────────────────────────────────────────────
-CSV_FILE_PATH = "/opt/airflow/data/raw/your_file.csv"  # path to your CSV
-TABLE_NAME = "your_table_transformed"  # production table name
+CSV_FILE_PATH = "/opt/airflow/data/raw/BankChurners.csv"  # path to your CSV
+TABLE_NAME = "bank"  # production table name
 PRODUCTION_SCHEMA = "production"
 POSTGRES_CONN_ID = "playground_postgres"  # registered via env var
 SODA_CONFIG_FILE = "/opt/airflow/soda/configuration.yml"

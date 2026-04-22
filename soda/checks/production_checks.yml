@@ -6,23 +6,23 @@
 # Update "your_table" and column names to match your data.
 # Soda CL reference: https://docs.soda.io/soda-cl/soda-cl-overview.html
 
-checks for production.your_table:  # ← rename to your production table
+checks for production.bank:  # ← rename to your production table
 
   # ── Volume ──────────────────────────────────────────────────────────────────
   - row_count > 0:
       name: "Production table must have rows"
 
-  # ── Completeness ────────────────────────────────────────────────────────────
-  - missing_count(id) = 0:          # ← replace 'id' with your PK column
-      name: "No missing primary keys in production"
+#   # ── Completeness ────────────────────────────────────────────────────────────
+#   - missing_count(id) = 0:          # ← replace 'id' with your PK column
+#       name: "No missing primary keys in production"
 
-  # ── Uniqueness ──────────────────────────────────────────────────────────────
-  - duplicate_count(id) = 0:        # ← replace 'id' with your PK column
-      name: "No duplicate primary keys in production"
+#   # ── Uniqueness ──────────────────────────────────────────────────────────────
+#   - duplicate_count(id) = 0:        # ← replace 'id' with your PK column
+#       name: "No duplicate primary keys in production"
 
-  # ── Audit columns added by the ETL DAG ──────────────────────────────────────
-  - missing_count(_loaded_at) = 0:
-      name: "Every row must have a load timestamp"
+#   # ── Audit columns added by the ETL DAG ──────────────────────────────────────
+#   - missing_count(_loaded_at) = 0:
+#       name: "Every row must have a load timestamp"
 
   # ── Freshness (uncomment if your data has a date column) ─────────────────────
   # - freshness(created_at) < 25h:

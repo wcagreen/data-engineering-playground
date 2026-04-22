@@ -24,16 +24,21 @@ import os
 from datetime import datetime, timedelta
 
 import pandas as pd
-from airflow import DAG
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
-# Airflow 3.0: operators moved to apache-airflow-providers-standard
-from airflow.providers.standard.operators.bash import BashOperator
-from airflow.providers.standard.operators.python import PythonOperator
+from airflow import DAG
+
+# Operator import: providers-standard (Airflow 3.x) with fallback to core (Airflow 2.x)
+try:
+    from airflow.providers.standard.operators.bash import BashOperator
+    from airflow.providers.standard.operators.python import PythonOperator
+except ImportError:
+    from airflow.operators.bash import BashOperator  # type: ignore[no-redef]
+    from airflow.operators.python import PythonOperator  # type: ignore[no-redef]
 
 # ─── Configuration — edit these ───────────────────────────────────────────────
-CSV_FILE_PATH = "/opt/airflow/data/raw/your_file.csv"  # path to your CSV
-TABLE_NAME = "your_table"  # staging table name
+CSV_FILE_PATH = "/opt/airflow/data/raw/BankChurners.csv"  # path to your CSV
+TABLE_NAME = "bank"  # production table name
 STAGING_SCHEMA = "staging"
 PRODUCTION_SCHEMA = "production"
 POSTGRES_CONN_ID = "playground_postgres"  # registered via env var
