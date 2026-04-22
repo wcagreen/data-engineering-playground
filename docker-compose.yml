@@ -43,6 +43,10 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: '/opt/airflow/scripts/airflow/passwords.json'
     # Auto-register the playground PostgreSQL connection (conn_id: playground_postgres)
     AIRFLOW_CONN_PLAYGROUND_POSTGRES: "postgresql://${PLAYGROUND_USER:-playground_user}:${PLAYGROUND_PASSWORD:-playground_pass}@postgres:5432/${PLAYGROUND_DB:-playground}"
+    # Expose playground DB credentials so Soda and scripts can read them via env var substitution
+    PLAYGROUND_USER: ${PLAYGROUND_USER:-playground_user}
+    PLAYGROUND_PASSWORD: ${PLAYGROUND_PASSWORD:-playground_pass}
+    PLAYGROUND_DB: ${PLAYGROUND_DB:-playground}
     # Tell dbt where to find profiles.yml
     DBT_PROFILES_DIR: /opt/airflow/dbt
   volumes:
@@ -113,6 +117,8 @@ services:
       - |
         mkdir -p /sources/logs /sources/dags /sources/plugins /sources/data/raw /sources/data/processed
         chown -R "${AIRFLOW_UID:-50000}:0" /sources/{logs,dags,plugins,data}
+        python3 -c "import json,os; open('/sources/scripts/airflow/passwords.json','w').write(json.dumps({'admin': os.environ.get('AIRFLOW_ADMIN_PASSWORD','admin')}))"
+        chown "${AIRFLOW_UID:-50000}:0" /sources/scripts/airflow/passwords.json
         exec /entrypoint airflow version
     environment:
       <<: *airflow-common-env
@@ -120,6 +126,7 @@ services:
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-admin}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-admin}
+      AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
     user: "0:0"
     volumes:
       - .:/sources

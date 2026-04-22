@@ -138,6 +138,11 @@ celerybeat.pid
 .env
 .envrc
 .venv
+airflow.v2.env
+airflow.v3.env
+
+# Auto-generated at container startup by airflow-init — do not commit
+scripts/airflow/passwords.json
 env/
 venv/
 ENV/

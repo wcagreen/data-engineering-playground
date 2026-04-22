@@ -9,6 +9,6 @@ data_source playground:
   type: postgres
   host: postgres          # Docker service name; use 'localhost' for local runs
   port: "5432"
-  username: playground_user
-  password: playground_pass
-  database: playground
+  username: ${PLAYGROUND_USER}
+  password: ${PLAYGROUND_PASSWORD}
+  database: ${PLAYGROUND_DB}

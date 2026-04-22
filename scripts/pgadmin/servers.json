@@ -8,7 +8,7 @@
       "MaintenanceDB": "postgres",
       "Username": "postgres",
       "SSLMode": "prefer",
-      "Comment": "Auto-configured — password: postgres"
+      "Comment": "Auto-configured. Enter the POSTGRES_PASSWORD from your .env file when prompted."
     }
   }
 }
