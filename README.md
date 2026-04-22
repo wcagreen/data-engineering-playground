@@ -1,5 +1,4 @@
-# airflow-playground
-
+# data-engineering-playground
 A local ELT / ETL practice environment built with Docker Compose.
 Supports two Airflow profiles: **v3** (default) and **v2** — switch by choosing the compose file.
 
