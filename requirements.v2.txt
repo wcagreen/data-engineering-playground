@@ -12,3 +12,4 @@ psycopg2-binary
 # ─── Airflow providers ────────────────────────────────────────────────────────
 apache-airflow-providers-postgres
 apache-airflow-providers-common-sql
+apache-airflow-providers-docker

@@ -9,8 +9,13 @@
 #   airflow-scheduler Airflow scheduler
 #   airflow-worker    Celery worker
 #   airflow-triggerer Async triggerer
+#   python-runner     Script runner  → http://localhost:8000  (ECS/Lambda-style invoke without the multiple images)
 #   flower            Celery monitoring → http://localhost:5555  (--profile flower)
-#   pgadmin           pgAdmin 4      → http://localhost:5050  (admin@playground.local / admin)
+#   pgadmin           pgAdmin 4      → http://localhost:5050  (--profile pgadmin)
+#
+# DockerOperator support
+#   The Docker socket is mounted into all Airflow containers so any task can
+#   spin up a fresh container via DockerOperator (local ECS-RunTask equivalent).
 # ─────────────────────────────────────────────────────────────────────────────
 
 version: '3.8'
@@ -47,6 +52,7 @@ x-airflow-common: &airflow-common
     - ./dbt:/opt/airflow/dbt
     - ./scripts/python:/opt/airflow/scripts/python  # etl_transforms.py and other scripts
     - ./scripts/airflow:/opt/airflow/scripts/airflow  # SimpleAuthManager passwords file
+    - /var/run/docker.sock:/var/run/docker.sock  # DockerOperator: lets tasks spin up containers
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     redis:
@@ -204,9 +210,40 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
-  # ─── pgAdmin ─────────────────────────────────────────────────────────────────
+  # ─── Python Script Runner ─────────────────────────────────────────────────
+  # ECS / Lambda-style invoke pattern: Airflow tasks POST a script name to
+  # this container and it runs it, returning stdout/stderr and exit code.
+  #
+  # POST http://python-runner:8000/run
+  #   {"script": "example_script.py", "args": ["--input", "/scripts/data.csv"]}
+  #
+  # The scripts/python/ directory is mounted as /scripts/ — drop any .py file
+  # there and it becomes immediately runnable without rebuilding.
+  python-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.runner
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./scripts/python:/scripts
+    environment:
+      SCRIPTS_DIR: /scripts
+      RUNNER_PORT: "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: always
+
+  # ─── pgAdmin (optional) ──────────────────────────────────────────────────────
+  # Start with: docker compose --profile pgadmin up
   pgadmin:
     image: dpage/pgadmin4:latest
+    profiles:
+      - pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin

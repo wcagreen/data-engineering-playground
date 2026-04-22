@@ -1,0 +1,18 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# python-runner — lightweight container that executes named Python scripts on
+# demand via a simple HTTP API, mirroring the ECS / Lambda invoke pattern.
+#
+# The scripts/python/ directory is mounted at runtime as /scripts/ so any
+# script you drop there is immediately available without rebuilding.
+# ─────────────────────────────────────────────────────────────────────────────
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir flask==3.1.0
+
+EXPOSE 8000
+
+# runner.py is injected via the mounted volume at /scripts/runner.py
+CMD ["python", "/scripts/runner.py"]

@@ -1,12 +1,13 @@
 """
 Script Runner DAG
 =================
-Pattern: Invoke external Python script → capture output → check exit code
+Pattern: Invoke an external Python script via the python-runner container
+         → capture output → check exit code.
 
 This mirrors the ECS / Lambda pattern:
-  1.  invoke_script   — launches the script as a subprocess, streams its
-                        stdout/stderr into the task logs, pushes the exit
-                        code to XCom.
+  1.  invoke_script   — POSTs {"script": ..., "args": ...} to the
+                        python-runner HTTP service, streams the output into
+                        the task log, and pushes the exit code to XCom.
   2.  check_exit_code — pulls the exit code from XCom and explicitly
                         fails the DAG if it is non-zero.
 
@@ -22,27 +23,43 @@ Separating "run" from "check" means:
 How to use
 ----------
 1.  Drop your Python script into  scripts/python/
-2.  Update SCRIPT_PATH and SCRIPT_ARGS below.
+2.  Update SCRIPT_NAME and SCRIPT_ARGS below.
 3.  Trigger the DAG manually from the Airflow UI.
-    You can also pass args at runtime using Airflow Params (see the
-    'dag_run.conf' example in the comments below).
+    You can also override at runtime via the trigger conf:
+      {"script": "other_script.py", "args": ["--flag", "value"]}
+
+python-runner API
+-----------------
+POST http://python-runner:8000/run
+  Body  : {"script": "script_name.py", "args": [...], "timeout": 3600}
+  Return: {"script": "...", "exit_code": 0, "output": "..."}
+
+GET  http://python-runner:8000/health
+  Return: {"status": "ok"}
 """
 
 from __future__ import annotations
 
-import subprocess
+import json
 from datetime import datetime, timedelta
+
+import requests
 
 from airflow import DAG
 
-# Airflow 3.0: PythonOperator moved to apache-airflow-providers-standard
-from airflow.providers.standard.operators.python import PythonOperator
+# Operator import: providers-standard (Airflow 3.x) with fallback to core (Airflow 2.x)
+try:
+    from airflow.providers.standard.operators.python import PythonOperator
+except ImportError:
+    from airflow.operators.python import PythonOperator  # type: ignore[no-redef]
 
 # ─── Configuration — edit these ───────────────────────────────────────────────
-SCRIPT_PATH = "/opt/airflow/scripts/python/example_script.py"
+# Script file name (relative to scripts/python/ — mounted at /scripts/ inside
+# the python-runner container).
+SCRIPT_NAME = "example_script.py"
 
 # Static arguments passed to the script every run.
-# For dynamic args from the UI trigger, see the dag_run.conf example below.
+# Override at trigger time with: {"args": ["--input", "/scripts/data.csv"]}
 SCRIPT_ARGS = [
     "--input",
     "/opt/airflow/data/raw/your_file.csv",
@@ -50,7 +67,10 @@ SCRIPT_ARGS = [
     "1",
 ]
 
-# How long (seconds) to let the script run before Airflow kills it.
+# URL of the python-runner service (reachable by service name inside Docker).
+RUNNER_URL = "http://python-runner:8000/run"
+
+# How long (seconds) to let the script run before the runner kills it.
 SCRIPT_TIMEOUT_SEC = 3600  # 1 hour
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -66,44 +86,45 @@ default_args = {
 
 def invoke_script(**context):
     """
-    Run  SCRIPT_PATH  as a subprocess.
+    POST the script name + args to the python-runner container.
 
-    • Arguments can be overridden at trigger time via dag_run.conf:
-        {"script_args": ["--input", "/opt/airflow/data/raw/other.csv"]}
+    • Script and args can be overridden at trigger time via dag_run.conf:
+        {"script": "other_script.py", "args": ["--input", "/scripts/data.csv"]}
 
-    • stdout and stderr are streamed line-by-line into the Airflow task log
+    • The runner's stdout/stderr is printed into the Airflow task log
       (visible in the UI under Logs > invoke_script).
 
     • The script's exit code is pushed to XCom so check_exit_code can read it.
       The task itself does NOT raise — that is intentionally left to the next
       task so the full output is always visible regardless of outcome.
     """
-    # Allow runtime override of args via UI / API trigger conf
     dag_run = context.get("dag_run")
     dag_run_conf = dag_run.conf if dag_run is not None else {}
-    runtime_args = dag_run_conf.get("script_args", SCRIPT_ARGS)
 
-    cmd = ["python", SCRIPT_PATH, *runtime_args]
-    print(f"Invoking: {' '.join(cmd)}")
-    print(f"Timeout : {SCRIPT_TIMEOUT_SEC}s")
+    script_name = dag_run_conf.get("script", SCRIPT_NAME)
+    script_args = dag_run_conf.get("args", SCRIPT_ARGS)
+
+    payload = {"script": script_name, "args": script_args, "timeout": SCRIPT_TIMEOUT_SEC}
+
+    print(f"Runner URL : {RUNNER_URL}")
+    print(f"Payload    : {json.dumps(payload)}")
     print("-" * 60)
 
-    process = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,  # merge stderr into stdout stream
-        text=True,
+    resp = requests.post(
+        RUNNER_URL,
+        json=payload,
+        # Allow slightly longer than the script timeout so the HTTP call
+        # doesn't cut off before the runner has a chance to reply.
+        timeout=SCRIPT_TIMEOUT_SEC + 30,
     )
+    resp.raise_for_status()
 
-    output_lines: list[str] = []
-    assert process.stdout is not None
-    for line in process.stdout:
-        stripped = line.rstrip()
-        print(stripped)  # visible in Airflow task log
-        output_lines.append(stripped)
+    result = resp.json()
+    output: str = result.get("output", "")
+    exit_code: int = result.get("exit_code", -1)
 
-    process.wait(timeout=SCRIPT_TIMEOUT_SEC)
-    exit_code = process.returncode
+    for line in output.splitlines():
+        print(line)
 
     print("-" * 60)
     print(f"Script finished with exit code: {exit_code}")
@@ -111,7 +132,7 @@ def invoke_script(**context):
     # Push to XCom — downstream task reads these
     context["ti"].xcom_push(key="exit_code", value=exit_code)
     # Store last 200 lines of output so check task can surface them on failure
-    context["ti"].xcom_push(key="output_tail", value="\n".join(output_lines[-200:]))
+    context["ti"].xcom_push(key="output_tail", value="\n".join(output.splitlines()[-200:]))
 
 
 def check_exit_code(**context):
@@ -158,10 +179,9 @@ with DAG(
     start_date=datetime(2024, 1, 1),
     schedule=None,  # manual trigger
     catchup=False,
-    tags=["script-runner", "subprocess", "python"],
-    # Params let you change script_args from the Airflow UI trigger form.
-    # Click 'Trigger DAG w/ config' and enter:
-    #   {"script_args": ["--input", "/opt/airflow/data/raw/other.csv"]}
+    tags=["script-runner", "docker-runner", "python"],
+    # Override script name or args at trigger time via the UI / API:
+    #   {"script": "my_script.py", "args": ["--input", "/scripts/data.csv"]}
 ) as dag:
     t1_invoke = PythonOperator(
         task_id="invoke_script",

@@ -12,6 +12,7 @@ SQLAlchemy>=1.4.49,<2.0
 apache-airflow-providers-postgres>=6.0.0
 apache-airflow-providers-common-sql>=1.14.0
 apache-airflow-providers-celery>=3.8.0
+apache-airflow-providers-docker>=3.10.0
 
 # ─── dbt (SQL transformations inside ELT pipeline) ───────────────────────────
 dbt-core>=1.8.0,<2.0.0
