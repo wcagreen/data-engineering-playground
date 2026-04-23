@@ -2,7 +2,7 @@
 # Airflow Playground — Makefile
 #
 # Requires: GNU make  (Windows: choco install make  |  Git Bash  |  WSL)
-#           PowerShell 7+  (pwsh)
+#           PowerShell (pwsh / powershell)
 #
 # Usage:
 #   make                        → up-v3 (default)
@@ -36,25 +36,25 @@ setup:
 # ── Airflow stack ─────────────────────────────────────────────────────────────
 
 up-v3:
-	pwsh -File scripts/dev/up-v3.ps1 $(ARGS)
+	powershell -File scripts/dev/up-v3.ps1 $(ARGS)
 
 up-v2:
-	pwsh -File scripts/dev/up-v2.ps1 $(ARGS)
+	powershell -File scripts/dev/up-v2.ps1 $(ARGS)
 
 down-v3:
-	pwsh -File scripts/dev/down-v3.ps1 $(ARGS)
+	powershell -File scripts/dev/down-v3.ps1 $(ARGS)
 
 down-v2:
-	pwsh -File scripts/dev/down-v2.ps1 $(ARGS)
+	powershell -File scripts/dev/down-v2.ps1 $(ARGS)
 
 ## Aliases (defaults to v3)
 down: down-v3
 
 reset-v3:
-	pwsh -File scripts/dev/reset-v3.ps1 $(ARGS)
+	powershell -File scripts/dev/reset-v3.ps1 $(ARGS)
 
 reset-v2:
-	pwsh -File scripts/dev/reset-v2.ps1 $(ARGS)
+	powershell -File scripts/dev/reset-v2.ps1 $(ARGS)
 
 reset: reset-v3
 
