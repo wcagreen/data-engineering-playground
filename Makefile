@@ -2,7 +2,6 @@
 # Airflow Playground — Makefile
 #
 # Requires: GNU make  (Windows: choco install make  |  Git Bash  |  WSL)
-#           PowerShell (pwsh / powershell)
 #
 # Usage:
 #   make                        → up-v3 (default)
@@ -29,32 +28,32 @@ ARGS ?=
 # Copy .example env files to real env files if they don't exist yet.
 
 setup:
-	@if not exist airflow.v3.env copy airflow.v3.env.example airflow.v3.env
-	@if not exist airflow.v2.env copy airflow.v2.env.example airflow.v2.env
-	@echo Edit airflow.v3.env and airflow.v2.env with your passwords, then run: make up-v3
+	@test -f airflow.v3.env || cp airflow.v3.env.example airflow.v3.env
+	@test -f airflow.v2.env || cp airflow.v2.env.example airflow.v2.env
+	@echo "Edit airflow.v3.env and airflow.v2.env with your passwords, then run: make up-v3"
 
 # ── Airflow stack ─────────────────────────────────────────────────────────────
 
 up-v3:
-	powershell -File scripts/dev/up-v3.ps1 $(ARGS)
+	docker compose --env-file airflow.v3.env up --build -d --remove-orphans $(ARGS)
 
 up-v2:
-	powershell -File scripts/dev/up-v2.ps1 $(ARGS)
+	docker compose --env-file airflow.v2.env up --build -d --remove-orphans $(ARGS)
 
 down-v3:
-	powershell -File scripts/dev/down-v3.ps1 $(ARGS)
+	docker compose --env-file airflow.v3.env down $(ARGS)
 
 down-v2:
-	powershell -File scripts/dev/down-v2.ps1 $(ARGS)
+	docker compose --env-file airflow.v2.env down $(ARGS)
 
 ## Aliases (defaults to v3)
 down: down-v3
 
 reset-v3:
-	powershell -File scripts/dev/reset-v3.ps1 $(ARGS)
+	docker compose --env-file airflow.v3.env down -v $(ARGS)
 
 reset-v2:
-	powershell -File scripts/dev/reset-v2.ps1 $(ARGS)
+	docker compose --env-file airflow.v2.env down -v $(ARGS)
 
 reset: reset-v3
 
