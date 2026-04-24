@@ -22,7 +22,7 @@
 ARGS ?=
 
 .DEFAULT_GOAL := up-v3
-.PHONY: up-v3 up-v2 down-v3 down-v2 down reset-v3 reset-v2 reset sources test lint setup
+.PHONY: up-v3 up-v2 down-v3 down-v2 down reset-v3 reset-v2 reset sources test lint setup venv-v3 venv-v2
 
 # ── First-time setup ──────────────────────────────────────────────────────────
 # Copy .example env files to real env files if they don't exist yet.
@@ -31,6 +31,19 @@ setup:
 	@test -f airflow.v3.env || cp airflow.v3.env.example airflow.v3.env
 	@test -f airflow.v2.env || cp airflow.v2.env.example airflow.v2.env
 	@echo "Edit airflow.v3.env and airflow.v2.env with your passwords, then run: make up-v3"
+
+# ── Python venvs ─────────────────────────────────────────────────────────────
+# Create isolated local venvs for IDE type-checking. Airflow itself runs in Docker.
+# After creating, select the interpreter in VS Code: Ctrl+Shift+P → Python: Select Interpreter
+
+venv-v3:
+	uv sync
+	@echo "v3 venv ready at .venv"
+
+venv-v2:
+	uv venv .venv-v2
+	uv pip install --python .venv-v2 "apache-airflow>=2.9.0,<3.0.0" -r requirements.v2.txt
+	@echo "v2 venv ready at .venv-v2"
 
 # ── Airflow stack ─────────────────────────────────────────────────────────────
 

@@ -15,6 +15,8 @@
       .\tasks.ps1 lint         # run ruff
       .\tasks.ps1 lint-fix     # run ruff --fix
       .\tasks.ps1 setup        # first-time: copy .example env files
+      .\tasks.ps1 venv-v3      # create/update .venv for Airflow v3 (uv sync)
+      .\tasks.ps1 venv-v2      # create .venv-v2 for Airflow v2
       .\tasks.ps1 help         # show this list
 #>
 
@@ -40,6 +42,17 @@ function Invoke-Task([string]$Name) {
                 Write-Host "Created airflow.v2.env from example."
             }
             Write-Host "Edit airflow.v3.env and airflow.v2.env with your passwords, then run: .\tasks.ps1 up-v3"
+        }
+
+        "venv-v3" {
+            uv sync
+            Write-Host "v3 venv ready at .venv — select it in VS Code: Python: Select Interpreter"
+        }
+
+        "venv-v2" {
+            uv venv .venv-v2
+            uv pip install --python .venv-v2 "apache-airflow>=2.9.0,<3.0.0" -r requirements.v2.txt
+            Write-Host "v2 venv ready at .venv-v2 — select it in VS Code: Python: Select Interpreter"
         }
 
         "up-v3"    { & scripts\dev\up-v3.ps1 @ExtraArgs }
@@ -80,6 +93,8 @@ Usage: .\tasks.ps1 [task]
   down-v2     Stop v2 stack (keeps data volumes)
   reset       Stop v3 stack and wipe all volumes (fresh start)
   reset-v2    Stop v2 stack and wipe all volumes
+  venv-v3     Create/update .venv for Airflow v3 (uv sync from pyproject.toml)
+  venv-v2     Create .venv-v2 for Airflow v2 (from requirements.v2.txt)
   sources     Regenerate dbt/models/staging/sources.yml from data/raw/*.csv
   test        Run pytest
   lint        Run ruff linter
