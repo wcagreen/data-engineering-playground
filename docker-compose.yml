@@ -198,6 +198,8 @@ services:
     environment:
       <<: *airflow-common-env
       DUMB_INIT_SETSID: "0"
+      # Use solo pool to avoid billiard prefork deadlock on Python 3.13
+      AIRFLOW__CELERY__POOL: solo
     restart: always
     depends_on:
       <<: *airflow-common-depends-on

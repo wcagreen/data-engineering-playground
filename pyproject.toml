@@ -2,7 +2,7 @@
 name = "airflow-playground"
 version = "0.1.0"
 description = "Local DE playground — Airflow 3.0, PostgreSQL, dbt, Soda"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12,<3.14"
 
 # ─── Core runtime dependencies ─────────────────────────────────────────────────
 # These are the data-engineering libraries used inside DAGs and Python scripts.
@@ -16,7 +16,7 @@ requires-python = ">=3.12,<3.13"
 #   • Linting with ruff
 dependencies = [
     # Airflow — installed for IDE type hints; the runtime lives in Docker
-    "apache-airflow==3.0.0",
+    "apache-airflow==3.2.1",
     # Providers used in DAGs — must be listed explicitly so Pylance can resolve them
     "apache-airflow-providers-postgres>=6.0.0",
     "apache-airflow-providers-common-sql>=1.14.0",

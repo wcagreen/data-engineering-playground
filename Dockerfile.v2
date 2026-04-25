@@ -1,4 +1,4 @@
-FROM apache/airflow:2.10.3
+FROM apache/airflow:2.11.2
 
 USER root
 
@@ -18,7 +18,7 @@ COPY requirements.v2.txt /requirements.v2.txt
 
 # Step 1 – Airflow-ecosystem packages pinned via the official constraints file.
 # Avoids ResolutionTooDeep / ResolutionImpossible from the large Airflow graph.
-ARG AIRFLOW_VERSION=2.10.3
+ARG AIRFLOW_VERSION=2.11.2
 ARG PYTHON_VERSION=3.12
 RUN pip install --no-cache-dir \
     --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt" \
