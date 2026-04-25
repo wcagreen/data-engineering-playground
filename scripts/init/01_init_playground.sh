@@ -42,16 +42,21 @@ EOSQL
 psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${PLAYGROUND_DB}" \
   -v playground_user="${PLAYGROUND_USER}" <<'EOSQL'
 CREATE SCHEMA IF NOT EXISTS staging;
+CREATE SCHEMA IF NOT EXISTS preprod;
 CREATE SCHEMA IF NOT EXISTS production;
 
 SELECT format('GRANT ALL ON SCHEMA staging TO %I', :'playground_user') \gexec
+SELECT format('GRANT ALL ON SCHEMA preprod TO %I', :'playground_user') \gexec
 SELECT format('GRANT ALL ON SCHEMA production TO %I', :'playground_user') \gexec
 
 SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA staging GRANT ALL ON TABLES TO %I', :'playground_user') \gexec
 SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA staging GRANT ALL ON SEQUENCES TO %I', :'playground_user') \gexec
+SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA preprod GRANT ALL ON TABLES TO %I', :'playground_user') \gexec
+SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA preprod GRANT ALL ON SEQUENCES TO %I', :'playground_user') \gexec
 SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA production GRANT ALL ON TABLES TO %I', :'playground_user') \gexec
 SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA production GRANT ALL ON SEQUENCES TO %I', :'playground_user') \gexec
 
 SELECT format('ALTER SCHEMA staging OWNER TO %I', :'playground_user') \gexec
+SELECT format('ALTER SCHEMA preprod OWNER TO %I', :'playground_user') \gexec
 SELECT format('ALTER SCHEMA production OWNER TO %I', :'playground_user') \gexec
 EOSQL
