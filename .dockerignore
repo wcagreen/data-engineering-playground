@@ -1,0 +1,20 @@
+# VCS and local env
+.git
+.gitignore
+.venv
+.venv-v2
+__pycache__/
+*.pyc
+
+# Large runtime outputs
+logs/
+dbt/logs/
+dbt/target/
+data/processed/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Airflow runtime artifacts
+airflow.cfg
+airflow.db
