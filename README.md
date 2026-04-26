@@ -97,7 +97,6 @@ docker compose --env-file airflow.v3.env --profile flower up -d
 ```
 airflow-playground/
 ├── dags/
-│   ├── bank_customers_dag.py   Standalone ETL: CSV → staging → SQL validation
 │   ├── elt_dag.py              ELT:  CSV → staging → dbt → production → Soda
 │   ├── etl_dag.py              ETL:  CSV → pandas transform → production → Soda
 │   └── script_runner_dag.py    Run any script/python/ file via python-runner service
