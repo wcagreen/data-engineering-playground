@@ -16,7 +16,7 @@ Supports **two Airflow versions** from a **single compose file**: **v3** (defaul
 | Service | URL | Default credentials |
 |---|---|---|
 | Airflow UI | http://localhost:8080 | `admin` / `admin` |
-| pgAdmin | http://localhost:5050 | `admin@example.com` / `admin` |
+| pgAdmin *(opt-in)* | http://localhost:5050 | `admin@example.com` / `admin` |
 | Python Runner | http://localhost:8000 | — |
 | PostgreSQL | `localhost:5432` | `postgres` / `postgres` |
 | Celery Flower *(opt-in)* | http://localhost:5555 | — |
