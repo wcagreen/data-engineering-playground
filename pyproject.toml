@@ -25,13 +25,14 @@ dependencies = [
     "numpy>=1.24.0",
     # PostgreSQL
     "psycopg2-binary>=2.9.5",
-    # Airflow 3.0 core pins sqlalchemy<2.0; let Airflow resolve the exact version
-    "sqlalchemy>=1.4.49,<2.0",
+    # Leave SQLAlchemy unpinned here; Airflow 3.2.x resolves it (requires >=2.0.48).
+    # Adding a manual sqlalchemy<2.0 pin will break provider installs.
     # dbt
     "dbt-core>=1.8.0,<2.0.0",
     "dbt-postgres>=1.8.0,<2.0.0",
     # Soda
     "soda-core-postgres>=3.3.0",
+    "apache-airflow-providers-docker>=4.5.5",
 ]
 
 # ─── Optional dependency groups ───────────────────────────────────────────────
