@@ -49,6 +49,7 @@ x-airflow-common: &airflow-common
     PLAYGROUND_DB: ${PLAYGROUND_DB:-playground}
     # Host path to project data dir used by DockerOperator bind mounts.
     HOST_DATA_DIR: ${HOST_DATA_DIR:-}
+    HOST_SCRIPTS_DIR: ${HOST_SCRIPTS_DIR:-}
     # Tell dbt where to find profiles.yml
     DBT_PROFILES_DIR: /opt/airflow/dbt
   volumes:
