@@ -47,6 +47,8 @@ x-airflow-common: &airflow-common
     PLAYGROUND_USER: ${PLAYGROUND_USER:-playground_user}
     PLAYGROUND_PASSWORD: ${PLAYGROUND_PASSWORD:-playground_pass}
     PLAYGROUND_DB: ${PLAYGROUND_DB:-playground}
+    # Host path to project data dir used by DockerOperator bind mounts.
+    HOST_DATA_DIR: ${HOST_DATA_DIR:-}
     # Tell dbt where to find profiles.yml
     DBT_PROFILES_DIR: /opt/airflow/dbt
   volumes:
@@ -260,6 +262,10 @@ services:
       - "${HOST_BIND:-127.0.0.1}:8000:8000"
     volumes:
       - ./scripts/python:/scripts
+      - type: bind
+        source: ${HOST_DATA_DIR:-./data}
+        target: /opt/airflow/data
+        read_only: true
     environment:
       SCRIPTS_DIR: /scripts
       RUNNER_PORT: "8000"
