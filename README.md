@@ -97,9 +97,9 @@ docker compose --env-file airflow.v3.env --profile flower up -d
 ```
 airflow-playground/
 ├── dags/
-│   ├── elt_dag.py              ELT:  CSV → staging → dbt → production → Soda
-│   ├── etl_dag.py              ETL:  CSV → pandas transform → production → Soda
-│   └── script_runner_dag.py    Run any script/python/ file via python-runner service
+│   ├── bank_customers_dag.py   ETL: infer schema from CSV → staging → validate → transform → production
+│   ├── lending_loans_dag.py    Process accepted and rejected loans independently as files arrive
+│   └── three_branch_complex_dag.py  Process mortgage loans data across three parallel branches
 ├── data/
 │   ├── raw/                    Drop your CSV files here
 │   └── processed/              Optional output for intermediate files
@@ -120,7 +120,10 @@ airflow-playground/
 ├── scripts/
 │   ├── init/                   Runs once on first PostgreSQL start
 │   ├── pgadmin/                Auto-registers the PG server in pgAdmin
-│   ├── python/                 Pure Python transforms + script-runner entrypoint
+│   ├── python/
+│   │   ├── load_accepted_loans.py  Loads accepted loans CSV into staging (drops sparse/null cols)
+│   │   ├── load_rejected_loans.py  Loads rejected loans CSV into staging
+│   │   └── runner.py               Script-runner entrypoint (CLI + HTTP) used by DockerOperator
 │   ├── airflow/                Airflow auth/password bootstrapping config
 │   └── dev/                    One-command local launchers (v2/v3 up/down/reset)
 ├── tests/
