@@ -16,7 +16,7 @@ requires-python = ">=3.12,<3.14"
 #   • Linting with ruff
 dependencies = [
     # Airflow — installed for IDE type hints; the runtime lives in Docker
-    "apache-airflow==3.2.1",
+    "apache-airflow==3.3.1",
     # Providers used in DAGs — must be listed explicitly so Pylance can resolve them
     "apache-airflow-providers-postgres>=6.0.0",
     "apache-airflow-providers-common-sql>=1.14.0",
